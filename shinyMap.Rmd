@@ -2,6 +2,8 @@
 title: "Shiny Map"
 output: html_notebook
 ---
+Use the code [here](https://stackoverflow.com/questions/26757353/re-fork-a-repository-on-github#29912546) from the terminal in the project working directory to re-fork the project from Kate's to get her most up to date stuff.
+
 
 The purpose of this R markdown is to create an interactive map in Shiny
 
