@@ -265,7 +265,7 @@ Shiny app showing distribution of trophic hierarchy by forest
 ui <- fluidPage(
 
   # App title ----
-  titlePanel("Mammal Distribution by Forset Type"),
+  titlePanel("Mammal Distribution by Forset"),
 
   # Sidebar layout with input and output definitions ----
   sidebarLayout(
@@ -396,19 +396,30 @@ server <- function(input, output) {
 shinyApp(ui = ui, server = server)
 ```
 
-Make a Shiny app that shows the mammal diversity by season per forest (not working). I think the reason why this is not working is because I have the data frame flipped from normal format (column names are usually row names).
+Make a Shiny app that shows the mammal diversity by season per forest
 ```{r}
 #Load the data
 Diversity_total <- read_csv("~/Documents/Kate_ThesisCode/Diversity_total.csv")
 
 #Modify the data to match that from my diversity data in thesis code
 Diversity_total$BC<-replace(Diversity_total$BC, is.na(Diversity_total$BC), 0)
-Diversity_total$Season<-factor(Diversity_total$Season,c(1,2,3,4), labels = c("Winter", "Spring", "Summer", "Fall"))
+
+#Get rid of season
+Diversity_total<- Diversity_total[,-2]
+
+
+divNew<- Diversity_total %>% pivot_longer(-Diversity_Indices, names_to = "Forest", values_to = "index")
+
+divFinal<- aggregate(divNew[, -c(1:2)], by = list(divNew$Diversity_Indices, divNew$Forest), FUN = mean)
+
+#rename from Group.1 and Group.2 
+names(divFinal) <- c("Diversity_Indices", "Forest", "Index")
+
 
 ui <- fluidPage(
 
   # App title ----
-  titlePanel("Forest Composition"),
+  titlePanel("Forest Diversity"),
 
   # Sidebar layout with input and output definitions ----
   sidebarLayout(
@@ -425,7 +436,7 @@ ui <- fluidPage(
     mainPanel(
 
       # Output: Histogram ----
-      plotOutput(outputId = "foresthist")
+      plotOutput(outputId = "diversity")
 
     )
   )
@@ -435,19 +446,19 @@ server <- function(input, output) {
 
   # Bar chart of mammal diversity per season per forest ----
 
-  output$foresthist <- renderPlot({
+  output$diversity <- renderPlot({
 
   data<-switch(input$forest, 
-                      "South Hammond" = Diversity_total %>% select(Diversity_Indices,Season,SH),
-                      "Beaver Creek" = Diversity_total %>% select(Diversity_Indices,Season,BC),
-                  "Donnerville" = Diversity_total %>% select(Diversity_Indices,Season,DON),
-                  "Degrasse" = Diversity_total %>% select(Diversity_Indices,Season,DEG),
-                  "Whippoorwill Corners" = Diversity_total %>% select(Diversity_Indices,Season,WHIP),
-                  "Whiskey Flats" = Diversity_total %>% select(Diversity_Indices,Season,WF),)
+                      "South Hammond" = divFinal %>% filter(Forest == "SH"),
+                      "Beaver Creek" = divFinal %>% filter(Forest == "BC"),
+                  "Donnerville" = divFinal %>% filter(Forest == "DON"),
+                  "Degrasse" = divFinal %>% filter(Forest == "DEG"),
+                  "Whippoorwill Corners" = divFinal %>% filter(Forest == "WHIP"),
+                  "Whiskey Flats" = divFinal %>% filter(Forest == "WF"),)
   
- ggplot(data, aes(x= "", y = data, fill = Diversity_Indices)) + 
+ ggplot(data, aes(x= Forest, y = Index, fill = Diversity_Indices)) + 
      geom_bar(stat = "identity",position= position_dodge(), width = 0.7) +
-     labs(title = "Forest", x= "Season", y= "Diversity Index") + theme (plot.title =element_text(hjust = 0.5))
+     labs(title = "Diversity per Forest", x= "Forest", y= "Diversity Index") + theme (plot.title =element_text(hjust = 0.5))
  
       })
 
@@ -468,6 +479,7 @@ library(dplyr)
 library(leaflet)
 library(maptools)
 library(rgdal)
+library(stringr)
 
 dataFinal<- read.csv("~/Documents/Kate_ThesisCode/dataFinal.csv")
 
@@ -481,7 +493,6 @@ Forests_proj<-spTransform(Forests, CRS("+proj=longlat +datum=WGS84"))
 dat_sum<-dataFinal %>% group_by(ForestName, choice) %>% summarise(
   number_det = n()
 )
-
 
 
 ui <- fluidPage(
@@ -504,11 +515,12 @@ ui <- fluidPage(
     mainPanel(
 
       # Output: Histogram ----
-     plotOutput("speciesmap")
+     leafletOutput("speciesmap")
 
     )
   )
 )
+
 
 #define server logic ----
 server<-function(input, output) {
@@ -517,35 +529,35 @@ server<-function(input, output) {
     
     data<-switch(input$species, 
                       "White-tailed Deer" = dat_sum %>% filter(choice == "DEERWHITETAILED"),
-                      "Chipmunk" = dat_sum %>% filter(choice == "CHIPMUNK"),
-                  "Coyote" = dat_sum %>% filter(choice == "COYOTE"),
-                  "Fisher" = dat_sum %>% filter(choice == "FISHER"),
-                  "Raccoon" = dat_sum %>% filter(choice == "RACCOON"),
-                  "Red Squirrel" = dat_sum %>% filter(choice == "SQUIRRELRED"),
-               "Gray Squirrel" = dat_sum %>% filter(choice == "SQUIRRELGRAY"),
-               "Black Bear" = dat_sum %>% filter(choice == "BLACKBEAR"),
-               "Red Fox" = dat_sum %>% filter(choice == "FOXRED"),
-               "Porcupine" = dat_sum %>% filter(choice == "PORCUPINE"),
-               "Bobcat" = dat_sum %>% filter(choice == "BOBCAT"),
-               "Weasel" = dat_sum %>% filter(choice == "WEASEL"),
-               "Striped Skunk" = dat_sum %>% filter(choice == "SKUNKSTRIPED"),
-               "Flying Squirrel" = dat_sum %>% filter(choice == "SQUIRRELFLYING"),
-               "Snowshoe Hare" = dat_sum %>% filter(choice == "SNOWSHOEHARE"),
-               "River Otter" = dat_sum %>% filter(choice == "RIVEROTTER"),
-               "Mink" = dat_sum %>% filter(choice == "MINK"),
-               "Other Small Mammal" = dat_sum %>% filter(choice == "OTHERSMALLMAMMAL"),
-               "Opossum" = dat_sum %>% filter(choice == "OPOSSUM"),)
-    
+                "Chipmunk" = dat_sum %>% filter(choice == "CHIPMUNK"),
+               "Coyote" = dat_sum %>% filter(choice == "COYOTE"),
+                "Fisher" = dat_sum %>% filter(choice == "FISHER"),
+                "Raccoon" = dat_sum %>% filter(choice == "RACCOON"),
+                "Red Squirrel" = dat_sum %>% filter(choice == "SQUIRRELRED"),
+              "Gray Squirrel" = dat_sum %>% filter(choice == "SQUIRRELGRAY"),
+              "Black Bear" = dat_sum %>% filter(choice == "BLACKBEAR"),
+              "Red Fox" = dat_sum %>% filter(choice == "FOXRED"),
+              "Porcupine" = dat_sum %>% filter(choice == "PORCUPINE"),
+              "Bobcat" = dat_sum %>% filter(choice == "BOBCAT"),
+              "Weasel" = dat_sum %>% filter(choice == "WEASEL"),
+              "Striped Skunk" = dat_sum %>% filter(choice == "SKUNKSTRIPED"),
+              "Flying Squirrel" = dat_sum %>% filter(choice == "SQUIRRELFLYING"),
+              "Snowshoe Hare" = dat_sum %>% filter(choice == "SNOWSHOEHARE"),
+              "River Otter" = dat_sum %>% filter(choice == "RIVEROTTER"),
+              "Mink" = dat_sum %>% filter(choice == "MINK"),
+              "Other Small Mammal" = dat_sum %>% filter(choice == "OTHERSMALLMAMMAL"),
+              "Opossum" = dat_sum %>% filter(choice == "OPOSSUM"),)
+
     #Join data to shape file
 Forests_proj@data <- left_join(Forests_proj@data, data, by = c("ForestCode"= "ForestName"))
 
-pal <- colorNumeric("Blues", domain= Forests_proj$number_det) 
+pal <- colorNumeric("Blues", domain= data$number_det) 
   
 leaflet() %>% addTiles() %>% 
   setView(lng = -75.05, lat = 44.05, zoom = 7) %>% 
   addPolygons(
      data = Forests_proj, 
-     fillColor = ~pal(Forests_proj$number_det),
+     fillColor = ~pal(data$number_det),
     weight = 1, 
     col = 'red',
     highlight = highlightOptions(#highlight lets you mouse over a county and have it change color
@@ -587,12 +599,95 @@ library(maptools) #produce maps using GIS layers
 source("~/Dropbox/Zooniverse_work/Camera_Trapping_Ch5_Work/TEAM library 1.7.R")
 
 #Now, following the Chapter 5 code, hopefully we can get this work. I think we need the data that came from the species accumulation curve because that has time data associated with the detections. Let's load that data too. 
-specActivity<-read_csv("SpeciesAcc.csv")
+masterDF <- read_csv("~/Documents/Kate_ThesisCode/masterDF_test.csv")
+dump<-which(masterDF$bin == "NOTHINGHERE" | masterDF$bin == "SOMETHINGHERE" | masterDF$bin == "HUMAN" | masterDF$bin == "GROUSERUFFED" | masterDF$bin == "CROWORRAVEN" | masterDF$bin == "OTHERBIRD" | masterDF$bin == "DOMESTICDOG" | masterDF$bin == "OWL" | masterDF$bin == "BLUEJAY" | masterDF$bin == "TURKEY" | masterDF$bin == "GOOSEWILD")
+masterDF<-masterDF[-dump,]
+masterDF$Start.Date<- mdy(masterDF$Start.Date)
+masterDF$End.Date<-mdy(masterDF$End.Date)
+masterDF$ndays<- difftime(masterDF$End.Date, masterDF$Start.Date , units = c("days"))
+
+masterDF<-masterDF[,2:11]
 
 
-specActivity$Photo.Time<-hms(specActivity$Photo.Time) #Fills in some NAs
+SpeciesAcc<-masterDF
+SpeciesAcc$Sampling.Event<-2020
+SpeciesAcc<- SpeciesAcc[,-(10)]
 
-activity_24h<-events.hours(SpeciesAcc) #Error here. Not working
+
+SpeciesAcc$td.photo<-as.POSIXct(SpeciesAcc$td.photo,format="%Y:%m:%d %H:%M:%S")
+SpeciesAcc$Photo.Date<-mdy(SpeciesAcc$Photo.Date)
+SpeciesAcc$Photo.Time<-hms(SpeciesAcc$Photo.Time)
+
+specActivity<-SpeciesAcc
+
+specActivity$Photo.Time<-period_to_seconds(specActivity$Photo.Time)
+
+activity_24h<-events.hours(specActivity) #Potential error here since we had some NAs. Reporting seconds not 00:00:00
+
+
+
+ui <- fluidPage(
+
+  # App title ----
+  titlePanel("Mammal Distribution by Forset Type"),
+
+  # Sidebar layout with input and output definitions ----
+  sidebarLayout(
+
+    # Sidebar panel for inputs ----
+    sidebarPanel(
+
+      # Input: Slider for the number of bins ----
+      selectInput("species", h3("Choose your Species"),
+                  choices = c("White-tailed Deer", "Chipmunk", "Coyote", "Fisher", "Raccoon", "Red Squirrel", "Other Small Mammal", "Gray Squirrel", "Black Bear", "Red Fox", "Porcupine", "Bobcat", "Opossum", "Weasel", "Striped Skunk", "Flying Squirrel", "Snowshoe Hare", "River Otter", "Mink"), selected = "White-tailed Deer"),
+        
+),
+    # Main panel for displaying outputs ----
+    mainPanel(
+
+      # Output: Histogram ----
+     leafletOutput("activity")
+
+    )
+  )
+)
+
+
+#define server logic ----
+server<-function(input, output) {
+
+  output$activity<-renderPlot({
+    
+    data<-switch(input$species, 
+                      "White-tailed Deer" = activity_24h$DEERWHITETAILED,
+                "Chipmunk" = activity_24h$CHIPMUNK,
+               "Coyote" = activity_24h$COYOTE,
+                "Fisher" = activity_24h$FISHER,
+                "Raccoon" = activity_24h$RACCOON,
+                "Red Squirrel" = activity_24h$SQUIRRELRED,
+              "Gray Squirrel" = activity_24h$SQUIRRELGRAY,
+              "Black Bear" = activity_24h$BLACKBEAR,
+              "Red Fox" = activity_24h$FOXRED,
+              "Porcupine" = activity_24h$PORCUPINE,
+              "Bobcat" = activity_24h$BOBCAT,
+              "Weasel" = activity_24h$WEASEL,
+              "Striped Skunk" = activity_24h$SKUNKSTRIPED,
+              "Flying Squirrel" = activity_24h$SQUIRRELFLYING,
+              "Snowshoe Hare" = activity_24h$SNOWSHOEHARE,
+              "River Otter" = activity_24h$RIVEROTTER,
+              "Mink" = activity_24h$MINK,
+              "Other Small Mammal" = activity_24h$OTHERSMALLMAMMAL,
+              "Opossum" = activity_24h$OPOSSUM)
+
+clock<-c(0:23)
+clock24.plot(data, clock, show.grid = T, lwd = 2, line.col = "blue", cex.lab = 0.5)
+
+})
+
+}
+
+# Run the app ----
+shinyApp(ui = ui, server = server)
 
 ```
 

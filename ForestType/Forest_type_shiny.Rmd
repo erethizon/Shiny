@@ -1,0 +1,297 @@
+---
+title: "Shiny App Forest Type"
+output: html_notebook
+---
+
+This R Notebook will contain all the shiny apps broken down by forest type. Hoping to make tabs with visual results based on forest type. 
+
+
+First, let's clear the environment and load the shiny package.
+```{r}
+rm(list = ls())
+library(shiny)
+library(dplyr)
+library(readr)
+library(ggplot2)
+```
+
+Now let's load the data frame we need. This will tell us the total number of species per forest and how many of each species were detected
+```{r}
+dataFinal <- read_csv("~/Documents/Kate_ThesisCode/dataFinal.csv")
+```
+
+Subset data to remove "Nothing Here" choice
+```{r}
+dump<-which(dataFinal$choice == "NOTHINGHERE")
+newData<-dataFinal[-dump,]
+```
+
+
+Load the data that was modified to add trophic level column (for trophic output)
+```{r}
+mammals<- read_csv("mammals.csv")
+mammals<- mammals[,2:16]
+```
+
+Load data and prepare data for covariates output
+```{r}
+Covariates <- read_csv("Covariates.csv")
+
+Cov_sum<-Covariates %>% group_by(ForestType) %>% summarise(
+  Water = mean(P_Water50), Mixed = mean(P_Mixed50), Evergreen = mean(P_Evergreen50), Deciduous = mean(P_Deciduous50), Development = mean(P_Development50), Agriculture = mean(P_Agriculture50), Barren = mean(P_Barren50), Shrub = mean(P_Shrub50), Wetland = mean(P_Wetland50), Herbaceous = mean(P_Herb50)
+)
+
+require(reshape2)
+dat_molten <- melt(Cov_sum,"ForestType")
+require(ggplot2)
+```
+
+
+
+Shiny app of species count by forest type
+```{r}
+ui <- fluidPage(
+
+  # App title ----
+  titlePanel("Species Count by Forest Type"),
+
+  # Sidebar layout with input and output definitions ----
+  sidebarLayout(
+
+    # Sidebar panel for inputs ----
+    sidebarPanel(
+
+      # Input: Slider for the number of bins ----
+      selectInput("forest", h3("Choose your Forest Type"),
+                  choices = c("Deciduous", "Pine"), selected = "Deciduous"),
+        
+       conditionalPanel( condition = "NOTHINGHERE",
+                    checkboxInput("remove", "Remove Nothing Here"))
+
+    ),
+
+    # Main panel for displaying outputs ----
+    mainPanel(  tabsetPanel(
+        tabPanel("Species per Forest",
+                 plotOutput(outputId = "foresthist")),
+        tabPanel("Species Trophic Levels", plotOutput(outputId = "trophic")),
+        tabPanel("Forest Composition", plotOutput(outputId = "covariates"))
+      )
+
+    )
+  )
+)
+
+server <- function(input, output) {
+
+  # Histogram of the number of species per forest type ----
+
+  output$foresthist <- renderPlot({
+
+
+
+if(input$remove){
+  newdata<-switch(input$forest,
+                "Deciduous" = newData %>% filter(ForestType=="Deciduous"),
+                      "Pine" = newData %>% filter(ForestType=="Pine"))
+  
+    ggplot(newdata, aes(choice)) + 
+     geom_histogram(stat = "count", position = "dodge") + 
+     theme_bw() + 
+    xlab("Species per Forest Type") +
+     ylab("Number of Detections") +
+     theme(axis.text.x = element_text(angle = 90, size = 10, vjust = 0.5))
+}    
+    else {
+data<- switch(input$forest, 
+                      "Deciduous" = dataFinal %>% filter(ForestType=="Deciduous"),
+                      "Pine" = dataFinal %>% filter(ForestType=="Pine"))
+          
+      ggplot(data, aes(choice)) + 
+     geom_histogram(stat = "count", position = "dodge") + 
+     theme_bw() + 
+    xlab("Species per Forest Type") +
+     ylab("Number of Detections") +
+     theme(axis.text.x = element_text(angle = 90, size = 10, vjust = 0.5))
+    }
+
+})
+   output$trophic <- renderPlot({
+
+  data<-switch(input$forest, 
+                      "Deciduous" = mammals %>% filter(ForestType=="Deciduous"),
+                      "Pine" = mammals %>% filter(ForestType=="Pine"),)
+  
+    ggplot(data, aes(Trophic)) + 
+     geom_histogram(stat = "count", position = "dodge") + 
+     theme_bw() + 
+    xlab("Trophic Level") +
+     ylab("Number of Detections") +
+     theme(axis.text.x = element_text(angle = 90, size = 10, vjust = 0.5))
+    
+ 
+      })
+   output$covariates <- renderPlot({
+
+  data<-switch(input$forest, 
+                      "Deciduous" = dat_molten %>% filter(ForestType=="Deciduous"),
+                      "Pine" = dat_molten %>% filter(ForestType=="Pine"),
+                  "Donnerville" = dat_molten %>% filter(Forest=="DON"),)
+  
+   ggplot(data, aes(x="", y=value, fill= variable)) + 
+         geom_bar(stat="identity") + 
+  coord_polar("y", start = 0) + 
+     geom_text(aes(label = paste0(round(value), "%")), position = position_stack(vjust = 0.5))+
+      theme(axis.line = element_blank(),
+          plot.title = element_text(hjust=0.5)) + 
+    labs(fill = "variable",
+         x = NULL,
+         y = NULL,
+         title = "Forest Composition")
+    
+ 
+      })
+
+    }
+
+
+shinyApp(ui = ui, server = server)
+```
+
+
+Load the data that was modified to add trophic level column
+```{r}
+mammals<- read_csv("mammals.csv")
+mammals<- mammals[,2:16]
+```
+
+Shiny app showing distribution of trophic hierarchy by forest type
+```{r}
+
+ui <- fluidPage(
+
+  # App title ----
+  titlePanel("Mammal Distribution by Forset Type"),
+
+  # Sidebar layout with input and output definitions ----
+  sidebarLayout(
+
+    # Sidebar panel for inputs ----
+    sidebarPanel(
+
+      # Input: Slider for the number of bins ----
+      selectInput("forest", h3("Choose your Forest"),
+                  choices = c("Deciduous", "Pine"), selected = "Deciduous"),
+        
+),
+    # Main panel for displaying outputs ----
+    mainPanel(
+
+      # Output: Histogram ----
+      plotOutput(outputId = "trophic")
+
+    )
+  )
+)
+
+server <- function(input, output) {
+
+  # Histogram of the number of different trophic levels per forest ----
+
+  output$trophic <- renderPlot({
+
+  data<-switch(input$forest, 
+                      "Deciduous" = mammals %>% filter(ForestType=="Deciduous"),
+                      "Pine" = mammals %>% filter(ForestType=="Pine"),)
+  
+    ggplot(data, aes(Trophic)) + 
+     geom_histogram(stat = "count", position = "dodge") + 
+     theme_bw() + 
+    xlab("Trophic Level") +
+     ylab("Number of Detections") +
+     theme(axis.text.x = element_text(angle = 90, size = 10, vjust = 0.5))
+    
+ 
+      })
+
+    }
+
+
+
+shinyApp(ui = ui, server = server)
+```
+
+
+Make a shiny app that breaks down the composition of each forest
+```{r}
+#First, load the data
+Covariates <- read_csv("Covariates.csv")
+
+Cov_sum<-Covariates %>% group_by(ForestType) %>% summarise(
+  Water = mean(P_Water50), Mixed = mean(P_Mixed50), Evergreen = mean(P_Evergreen50), Deciduous = mean(P_Deciduous50), Development = mean(P_Development50), Agriculture = mean(P_Agriculture50), Barren = mean(P_Barren50), Shrub = mean(P_Shrub50), Wetland = mean(P_Wetland50), Herbaceous = mean(P_Herb50)
+)
+
+require(reshape2)
+dat_molten <- melt(Cov_sum,"ForestType")
+require(ggplot2)
+
+
+
+
+ui <- fluidPage(
+
+  # App title ----
+  titlePanel("Forest Composition"),
+
+  # Sidebar layout with input and output definitions ----
+  sidebarLayout(
+
+    # Sidebar panel for inputs ----
+    sidebarPanel(
+
+      # Input: Slider for the number of bins ----
+      selectInput("forest", h3("Choose your Forest"),
+                  choices = c("Deciduous", "Pine"), selected = "Deciduous"),
+        
+),
+    # Main panel for displaying outputs ----
+    mainPanel(
+
+      # Output: Histogram ----
+      plotOutput(outputId = "covariates")
+
+    )
+  )
+)
+
+server <- function(input, output) {
+
+  # Pie chart of forest composition per forest ----
+
+  output$covariates <- renderPlot({
+
+  data<-switch(input$forest, 
+                      "Deciduous" = dat_molten %>% filter(ForestType=="Deciduous"),
+                      "Pine" = dat_molten %>% filter(ForestType=="Pine"),
+                  "Donnerville" = dat_molten %>% filter(Forest=="DON"),)
+  
+   ggplot(data, aes(x="", y=value, fill= variable)) + 
+         geom_bar(stat="identity") + 
+  coord_polar("y", start = 0) + 
+     geom_text(aes(label = paste0(round(value), "%")), position = position_stack(vjust = 0.5))+
+      theme(axis.line = element_blank(),
+          plot.title = element_text(hjust=0.5)) + 
+    labs(fill = "variable",
+         x = NULL,
+         y = NULL,
+         title = "Forest Composition")
+    
+ 
+      })
+
+    }
+
+
+
+shinyApp(ui = ui, server = server)
+```

@@ -1,0 +1,145 @@
+---
+title: "Shiny Map"
+output: html_notebook
+---
+
+The purpose of this R markdown is to create an interactive map in Shiny
+
+I'm using this [Leaflet for R](https://rstudio.github.io/leaflet/) website as a guide.
+```{r}
+#Set up the workspace
+
+rm(list = ls())
+library(dplyr)
+library(leaflet)
+library(maptools)
+library(rgdal)
+library(tidyr)
+```
+How do we load shapefiles? Use maptools
+Got data from NYS as shapefiles.  
+
+Step 1 is that we need to set the projection. We have data as projected, NAD_1983_UTM_Zone_18N with a geogcs of GCS_North_American_1983
+```{r}
+A2A<-readOGR("Map/A2ACorridor.shp", layer = "A2ACorridor")
+str(A2A@data)
+Forests<-readOGR("Data/Study Forest Locations.shp", layer = "Study Forest Locations")
+```
+
+First we need to do a spatial transform to get lat/long into the projection.
+
+```{r}
+A2A_proj<-spTransform(A2A, CRS("+proj=longlat +datum=WGS84"))
+Forests_proj<-spTransform(Forests, CRS("+proj=longlat +datum=WGS84"))
+Forests_copy<-Forests_proj
+```
+Now try to plot
+```{r}
+
+leaflet() %>% addTiles() %>% 
+  setView(lng = -75.05, lat = 44.05, zoom = 7) %>% 
+  addPolygons(
+    data = Forests_proj, 
+    weight = 5, 
+    col = 'red',
+    highlight = highlightOptions(#highlight lets you mouse over a county and have it change color
+      weight = 5,
+      color = "orange", 
+      bringToFront = T))
+
+
+```
+Great! It works!
+
+Now bring in some data about the detections
+
+```{r}
+data<- read.csv("~/Documents/Kate_ThesisCode/dataFinal.csv")
+
+#Need to summarize the data so that per species there is the total count per forest 
+# dat_sum<-data %>% group_by(ForestName) %>% summarise(
+#   HUMAN = sum(data$choice == "HUMAN"),
+#   DEERWHITETAILED = sum(data$choice == "DEERWHITETAILED"),
+#   CHIPMUNK = sum(data$choice == "CHIPMUNK"),
+#   COYOTE = sum(data$choice == "COYOTE"),
+#   SOMETHINGHERE = sum(data$choice == "SOMETHINGHERE"),
+#   FISHER = sum(data$choice == "FISHER"),
+#   COTTONTAILRABBIT = sum(data$choice == "COTTONTAILRABBIT"),
+#   NOTHINGHERE = sum(data$choice == "NOTHINGHERE"), 
+#   RACCOON = sum(data$choice == "RACCOON"),
+#   GROUSERUFFED = sum(data$choice == "GROUSERUFFED"),
+#   SQUIRRELRED = sum(data$choice == "SQUIRRELRED"),
+#   BLUEJAY = sum(data$choice == "BLUEJAY"),
+#   OTHERSMALLMAMMAL = sum(data$choice == "OTHERSMALLMAMMAL"),
+#   OTHERBIRD = sum(data$choice == "OTHERBIRD"),
+#   OPOSSUM = sum(data$choice == "OPOSSUM"),
+#   SQUIRRELGRAY = sum(data$choice == "SQUIRRELGRAY"),
+#   BLACKBEAR = sum(data$choice == "BLACKBEAR"),
+#   TURKEY = sum(data$choice == "TURKEY"),
+#   DOMESTICCAT = sum(data$choice == "DOMESTICCAT"),
+#   DOMESTICDOG = sum(data$choice == "DOMESTICDOG"),
+#   FOXRED = sum(data$choice == "FOXRED"),
+#   PORCUPINE = sum(data$choice == "PORCUPINE"),
+#   BOBCAT = sum(data$choice == "BOBCAT"),
+#   WEASEL = sum(data$choice == "WEASEL"),
+#   SKUNKSTRIPED = sum(data$choice == "SKUNKSTRIPED"),
+#   SQUIRRELFLYING = sum(data$choice == "SQUIRRELFLYING"),
+#   SNOWSHOEHARE = sum(data$choice == "SNOWSHOEHARE"),
+#   CROWORRAVEN = sum(data$choice == "CROWORRAVEN"),
+#   OWL = sum(data$choice == "OWL"),
+#   GOOSEWILD = sum(data$choice == "GOOSEWILD"),
+#   RIVEROTTER = sum(data$choice == "RIVEROTTER"),
+#   MINK = sum(data$choice == "MINK")
+# )
+
+
+dat_sum<-data %>% group_by(ForestName, choice) %>% summarise(
+  number_det = n()
+)
+
+deer<-filter(dat_sum, choice == "DEERWHITETAILED")
+#Need to subset by species (which will happen in Shiny) 
+```
+
+Let's try joining to the shapefile using the `@data` call.
+
+```{r}
+Forests_proj@data <- left_join(Forests_proj@data, deer, by = c("ForestCode"= "ForestName"))
+
+pal <- colorNumeric("Blues", domain= deer$number_det, alpha = TRUE) 
+```
+
+Now can I add those data to the map?
+```{r}
+library(htmltools)
+labels<-sprintf( "%s, Number of Detections %s", 
+                 Forests$ForestCode,Forests_proj$number_det) %>% lapply(htmltools::HTML)
+
+```
+And now try to display
+```{r}
+
+leaflet() %>% addTiles() %>% 
+  setView(lng = -75.169395, lat = 44.595466, zoom = 8) %>%  
+  addPolygons(
+     data = Forests_proj, 
+     fillColor = ~pal(deer$number_det),
+     fillOpacity = 0.5,
+    weight = 2, 
+    col = 'red',
+    highlight = highlightOptions(#highlight lets you mouse over a county and have it change color
+      weight = 5,
+      color = "orange", 
+      bringToFront = T),
+    label = labels,
+    labelOptions = labelOptions(
+      style = list("font-weight" = "normal", padding = "3px 8px"),
+      textsize = "15px",
+      direction = "auto")
+    ) 
+    
+```
+It works!
+
+```
+

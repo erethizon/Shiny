@@ -1,0 +1,135 @@
+"","Forest","choice","number_det"
+"1","Beaver Creek","BLACKBEAR",5
+"2","Beaver Creek","BLUEJAY",1
+"3","Beaver Creek","BOBCAT",4
+"4","Beaver Creek","COTTONTAILRABBIT",1
+"5","Beaver Creek","COYOTE",3
+"6","Beaver Creek","DEERWHITETAILED",185
+"7","Beaver Creek","FISHER",5
+"8","Beaver Creek","GOOSEWILD",1
+"9","Beaver Creek","GROUSERUFFED",1
+"10","Beaver Creek","HUMAN",15
+"11","Beaver Creek","NOTHINGHERE",219
+"12","Beaver Creek","OTHERBIRD",1
+"13","Beaver Creek","OTHERSMALLMAMMAL",3
+"14","Beaver Creek","PORCUPINE",29
+"15","Beaver Creek","RACCOON",11
+"16","Beaver Creek","SOMETHINGHERE",11
+"17","Beaver Creek","SQUIRRELGRAY",121
+"18","Beaver Creek","SQUIRRELRED",1
+"19","Beaver Creek","TURKEY",6
+"20","Beaver Creek","WEASEL",1
+"21","Degrasse","BLUEJAY",7
+"22","Degrasse","CHIPMUNK",24
+"23","Degrasse","COTTONTAILRABBIT",9
+"24","Degrasse","COYOTE",17
+"25","Degrasse","DEERWHITETAILED",290
+"26","Degrasse","DOMESTICDOG",1
+"27","Degrasse","FISHER",14
+"28","Degrasse","FOXRED",2
+"29","Degrasse","GOOSEWILD",1
+"30","Degrasse","GROUSERUFFED",2
+"31","Degrasse","HUMAN",9
+"32","Degrasse","MINK",1
+"33","Degrasse","NOTHINGHERE",109
+"34","Degrasse","OPOSSUM",1
+"35","Degrasse","OTHERBIRD",3
+"36","Degrasse","OTHERSMALLMAMMAL",9
+"37","Degrasse","PORCUPINE",3
+"38","Degrasse","RACCOON",6
+"39","Degrasse","RIVEROTTER",2
+"40","Degrasse","SOMETHINGHERE",21
+"41","Degrasse","SQUIRRELGRAY",3
+"42","Degrasse","SQUIRRELRED",8
+"43","Degrasse","TURKEY",2
+"44","Donnerville","BLACKBEAR",2
+"45","Donnerville","BLUEJAY",3
+"46","Donnerville","BOBCAT",1
+"47","Donnerville","CHIPMUNK",39
+"48","Donnerville","COYOTE",3
+"49","Donnerville","DEERWHITETAILED",107
+"50","Donnerville","DOMESTICDOG",1
+"51","Donnerville","FISHER",4
+"52","Donnerville","FOXRED",13
+"53","Donnerville","GROUSERUFFED",3
+"54","Donnerville","HUMAN",4
+"55","Donnerville","NOTHINGHERE",420
+"56","Donnerville","OTHERBIRD",37
+"57","Donnerville","OTHERSMALLMAMMAL",18
+"58","Donnerville","OWL",1
+"59","Donnerville","PORCUPINE",1
+"60","Donnerville","RACCOON",8
+"61","Donnerville","SOMETHINGHERE",11
+"62","Donnerville","SQUIRRELGRAY",4
+"63","Donnerville","SQUIRRELRED",1
+"64","Donnerville","TURKEY",7
+"65","South Hammond","BLACKBEAR",6
+"66","South Hammond","BLUEJAY",2
+"67","South Hammond","BOBCAT",1
+"68","South Hammond","CHIPMUNK",61
+"69","South Hammond","COTTONTAILRABBIT",3
+"70","South Hammond","COYOTE",10
+"71","South Hammond","CROWORRAVEN",4
+"72","South Hammond","DEERWHITETAILED",243
+"73","South Hammond","DOMESTICCAT",1
+"74","South Hammond","DOMESTICDOG",3
+"75","South Hammond","FISHER",3
+"76","South Hammond","FOXRED",7
+"77","South Hammond","GROUSERUFFED",2
+"78","South Hammond","HUMAN",6
+"79","South Hammond","NOTHINGHERE",357
+"80","South Hammond","OPOSSUM",3
+"81","South Hammond","OTHERBIRD",23
+"82","South Hammond","OTHERSMALLMAMMAL",5
+"83","South Hammond","PORCUPINE",19
+"84","South Hammond","RACCOON",4
+"85","South Hammond","SKUNKSTRIPED",1
+"86","South Hammond","SOMETHINGHERE",16
+"87","South Hammond","SQUIRRELFLYING",2
+"88","South Hammond","SQUIRRELGRAY",224
+"89","South Hammond","SQUIRRELRED",1
+"90","South Hammond","TURKEY",16
+"91","South Hammond","WEASEL",3
+"92","Whippoorwill Corners","BLACKBEAR",1
+"93","Whippoorwill Corners","BLUEJAY",5
+"94","Whippoorwill Corners","CHIPMUNK",21
+"95","Whippoorwill Corners","COYOTE",18
+"96","Whippoorwill Corners","DEERWHITETAILED",253
+"97","Whippoorwill Corners","DOMESTICDOG",8
+"98","Whippoorwill Corners","FISHER",10
+"99","Whippoorwill Corners","FOXRED",5
+"100","Whippoorwill Corners","GROUSERUFFED",5
+"101","Whippoorwill Corners","HUMAN",20
+"102","Whippoorwill Corners","NOTHINGHERE",262
+"103","Whippoorwill Corners","OTHERBIRD",23
+"104","Whippoorwill Corners","OTHERSMALLMAMMAL",11
+"105","Whippoorwill Corners","PORCUPINE",21
+"106","Whippoorwill Corners","RACCOON",46
+"107","Whippoorwill Corners","SKUNKSTRIPED",2
+"108","Whippoorwill Corners","SOMETHINGHERE",21
+"109","Whippoorwill Corners","SQUIRRELFLYING",2
+"110","Whippoorwill Corners","SQUIRRELGRAY",61
+"111","Whippoorwill Corners","SQUIRRELRED",2
+"112","Whippoorwill Corners","TURKEY",2
+"113","Whippoorwill Corners","WEASEL",2
+"114","Whiskey Flats","BLACKBEAR",6
+"115","Whiskey Flats","BLUEJAY",12
+"116","Whiskey Flats","CHIPMUNK",23
+"117","Whiskey Flats","COTTONTAILRABBIT",3
+"118","Whiskey Flats","COYOTE",40
+"119","Whiskey Flats","DEERWHITETAILED",389
+"120","Whiskey Flats","DOMESTICDOG",2
+"121","Whiskey Flats","FISHER",20
+"122","Whiskey Flats","GROUSERUFFED",4
+"123","Whiskey Flats","HUMAN",15
+"124","Whiskey Flats","NOTHINGHERE",332
+"125","Whiskey Flats","OTHERSMALLMAMMAL",1
+"126","Whiskey Flats","PORCUPINE",20
+"127","Whiskey Flats","RACCOON",47
+"128","Whiskey Flats","SNOWSHOEHARE",2
+"129","Whiskey Flats","SOMETHINGHERE",18
+"130","Whiskey Flats","SQUIRRELFLYING",8
+"131","Whiskey Flats","SQUIRRELGRAY",18
+"132","Whiskey Flats","SQUIRRELRED",39
+"133","Whiskey Flats","TURKEY",11
+"134","Whiskey Flats","WEASEL",1

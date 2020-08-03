@@ -16,6 +16,7 @@ library(dplyr)
 library(leaflet)
 library(maptools)
 library(rgdal)
+library(tidyr)
 ```
 How do we load shapefiles? Use maptools
 Got data from NYS as shapefiles.  
@@ -58,40 +59,40 @@ Now bring in some data about the detections
 data<- read.csv("~/Documents/Kate_ThesisCode/dataFinal.csv")
 
 #Need to summarize the data so that per species there is the total count per forest 
-dat_sum<-data %>% group_by(ForestName, choice) %>% summarise(
-  HUMAN = sum(data$choice == "HUMAN"),
-  DEERWHITETAILED = sum(data$choice == "DEERWHITETAILED"),
-  CHIPMUNK = sum(data$choice == "CHIPMUNK"),
-  COYOTE = sum(data$choice == "COYOTE"),
-  SOMETHINGHERE = sum(data$choice == "SOMETHINGHERE"),
-  FISHER = sum(data$choice == "FISHER"),
-  COTTONTAILRABBIT = sum(data$choice == "COTTONTAILRABBIT"),
-  NOTHINGHERE = sum(data$choice == "NOTHINGHERE"), 
-  RACCOON = sum(data$choice == "RACCOON"),
-  GROUSERUFFED = sum(data$choice == "GROUSERUFFED"),
-  SQUIRRELRED = sum(data$choice == "SQUIRRELRED"),
-  BLUEJAY = sum(data$choice == "BLUEJAY"),
-  OTHERSMALLMAMMAL = sum(data$choice == "OTHERSMALLMAMMAL"),
-  OTHERBIRD = sum(data$choice == "OTHERBIRD"),
-  OPOSSUM = sum(data$choice == "OPOSSUM"),
-  SQUIRRELGRAY = sum(data$choice == "SQUIRRELGRAY"),
-  BLACKBEAR = sum(data$choice == "BLACKBEAR"),
-  TURKEY = sum(data$choice == "TURKEY"),
-  DOMESTICCAT = sum(data$choice == "DOMESTICCAT"),
-  DOMESTICDOG = sum(data$choice == "DOMESTICDOG"),
-  FOXRED = sum(data$choice == "FOXRED"),
-  PORCUPINE = sum(data$choice == "PORCUPINE"),
-  BOBCAT = sum(data$choice == "BOBCAT"),
-  WEASEL = sum(data$choice == "WEASEL"),
-  SKUNKSTRIPED = sum(data$choice == "SKUNKSTRIPED"),
-  SQUIRRELFLYING = sum(data$choice == "SQUIRRELFLYING"),
-  SNOWSHOEHARE = sum(data$choice == "SNOWSHOEHARE"),
-  CROWORRAVEN = sum(data$choice == "CROWORRAVEN"),
-  OWL = sum(data$choice == "OWL"),
-  GOOSEWILD = sum(data$choice == "GOOSEWILD"),
-  RIVEROTTER = sum(data$choice == "RIVEROTTER"),
-  MINK = sum(data$choice == "MINK")
-)
+# dat_sum<-data %>% group_by(ForestName) %>% summarise(
+#   HUMAN = sum(data$choice == "HUMAN"),
+#   DEERWHITETAILED = sum(data$choice == "DEERWHITETAILED"),
+#   CHIPMUNK = sum(data$choice == "CHIPMUNK"),
+#   COYOTE = sum(data$choice == "COYOTE"),
+#   SOMETHINGHERE = sum(data$choice == "SOMETHINGHERE"),
+#   FISHER = sum(data$choice == "FISHER"),
+#   COTTONTAILRABBIT = sum(data$choice == "COTTONTAILRABBIT"),
+#   NOTHINGHERE = sum(data$choice == "NOTHINGHERE"), 
+#   RACCOON = sum(data$choice == "RACCOON"),
+#   GROUSERUFFED = sum(data$choice == "GROUSERUFFED"),
+#   SQUIRRELRED = sum(data$choice == "SQUIRRELRED"),
+#   BLUEJAY = sum(data$choice == "BLUEJAY"),
+#   OTHERSMALLMAMMAL = sum(data$choice == "OTHERSMALLMAMMAL"),
+#   OTHERBIRD = sum(data$choice == "OTHERBIRD"),
+#   OPOSSUM = sum(data$choice == "OPOSSUM"),
+#   SQUIRRELGRAY = sum(data$choice == "SQUIRRELGRAY"),
+#   BLACKBEAR = sum(data$choice == "BLACKBEAR"),
+#   TURKEY = sum(data$choice == "TURKEY"),
+#   DOMESTICCAT = sum(data$choice == "DOMESTICCAT"),
+#   DOMESTICDOG = sum(data$choice == "DOMESTICDOG"),
+#   FOXRED = sum(data$choice == "FOXRED"),
+#   PORCUPINE = sum(data$choice == "PORCUPINE"),
+#   BOBCAT = sum(data$choice == "BOBCAT"),
+#   WEASEL = sum(data$choice == "WEASEL"),
+#   SKUNKSTRIPED = sum(data$choice == "SKUNKSTRIPED"),
+#   SQUIRRELFLYING = sum(data$choice == "SQUIRRELFLYING"),
+#   SNOWSHOEHARE = sum(data$choice == "SNOWSHOEHARE"),
+#   CROWORRAVEN = sum(data$choice == "CROWORRAVEN"),
+#   OWL = sum(data$choice == "OWL"),
+#   GOOSEWILD = sum(data$choice == "GOOSEWILD"),
+#   RIVEROTTER = sum(data$choice == "RIVEROTTER"),
+#   MINK = sum(data$choice == "MINK")
+# )
 
 
 dat_sum<-data %>% group_by(ForestName, choice) %>% summarise(
@@ -107,24 +108,26 @@ Let's try joining to the shapefile using the `@data` call.
 ```{r}
 Forests_proj@data <- left_join(Forests_proj@data, deer, by = c("ForestCode"= "ForestName"))
 
-pal <- colorNumeric("Blues", domain= Forests_proj$number_det) 
+pal <- colorNumeric("Blues", domain= deer$number_det, alpha = TRUE) 
 ```
 
 Now can I add those data to the map?
 ```{r}
 library(htmltools)
-labels<-sprintf( "%s", 
-                 Forests$ForestCode) %>% lapply(htmltools::HTML)
+labels<-sprintf( "%s, Number of Detections %s", 
+                 Forests$ForestCode,Forests_proj$number_det) %>% lapply(htmltools::HTML)
+
 ```
 And now try to display
 ```{r}
 
 leaflet() %>% addTiles() %>% 
-  setView(lng = -75.05, lat = 44.05, zoom = 7) %>% 
+  setView(lng = -75.169395, lat = 44.595466, zoom = 8) %>%  
   addPolygons(
      data = Forests_proj, 
-     fillColor = ~pal(Forests_proj$number_det),
-    weight = 1, 
+     fillColor = ~pal(deer$number_det),
+     fillOpacity = 0.5,
+    weight = 2, 
     col = 'red',
     highlight = highlightOptions(#highlight lets you mouse over a county and have it change color
       weight = 5,

@@ -1,0 +1,383 @@
+---
+title: "Shiny App Forest"
+output: html_notebook
+---
+
+
+This R Notebook will contain all the shiny apps broken down by forest. Hoping to make tabs with visual results based on forest name.
+
+
+First, let's clear the environment and load the shiny package.
+```{r}
+rm(list = ls())
+library(shiny)
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(tidyverse)
+library(htmltools)
+```
+
+Now let's load the data frame we need. This will tell us the total number of species per forest and how many of each species were detected
+```{r}
+dataFinal <- read_csv("~/Documents/Kate_ThesisCode/dataFinal.csv")
+```
+
+Subset data to remove "Nothing Here" choice
+```{r}
+dump<-which(dataFinal$choice == "NOTHINGHERE")
+newData<-dataFinal[-dump,]
+```
+
+
+Data for trophic tab
+```{r}
+mammals<- read_csv("mammals.csv")
+mammals<- mammals[,2:16]
+```
+
+
+
+Data for covariates tab
+```{r}
+Covariates <- read_csv("Covariates.csv")
+
+Cov_sum<-Covariates %>% group_by(Forest) %>% summarise(
+  Water = mean(P_Water50), Mixed = mean(P_Mixed50), Evergreen = mean(P_Evergreen50), Deciduous = mean(P_Deciduous50), Development = mean(P_Development50), Agriculture = mean(P_Agriculture50), Barren = mean(P_Barren50), Shrub = mean(P_Shrub50), Wetland = mean(P_Wetland50), Herbaceous = mean(P_Herb50)
+)
+
+require(reshape2)
+dat_molten <- melt(Cov_sum,"Forest")
+require(ggplot2)
+
+copy<-dat_molten
+copy[is.na(copy)] = 0
+all_forests<- copy %>% group_by(variable) %>% summarise(
+value = mean(value)
+)
+
+
+```
+
+For diversity shiny app
+```{r}
+#Load the data
+Diversity_total <- read_csv("~/Documents/Kate_ThesisCode/Diversity_total.csv")
+
+#Modify the data to match that from my diversity data in thesis code
+Diversity_total$BC<-replace(Diversity_total$BC, is.na(Diversity_total$BC), 0)
+
+#Get rid of season
+Diversity_total<- Diversity_total[,-2]
+
+
+divNew<- Diversity_total %>% pivot_longer(-Diversity_Indices, names_to = "Forest", values_to = "index")
+
+divFinal<- aggregate(divNew[, -c(1:2)], by = list(divNew$Diversity_Indices, divNew$Forest), FUN = mean)
+
+#rename from Group.1 and Group.2 
+names(divFinal) <- c("Diversity_Indices", "Forest", "Index")
+
+```
+
+```{r}
+#Load shape file 
+Forests<-readOGR("Data/Study Forest Locations.shp", layer = "Study Forest Locations")
+
+#Project shape file
+Forests_proj<-spTransform(Forests, CRS("+proj=longlat +datum=WGS84"))
+
+#reconfigure data frame
+dat_sum<-dataFinal %>% group_by(ForestName, choice) %>% summarise(
+  number_det = n()
+)
+
+labels<-sprintf( "%s", 
+                 Forests$ForestCode) %>% lapply(htmltools::HTML)
+```
+
+
+Combined shiny app into tabs
+```{r}
+ui <- fluidPage(
+
+  # App title ----
+  titlePanel("North Country Wild Zooniverse Project"),
+
+  # Sidebar layout with input and output definitions ----
+  sidebarLayout(
+
+    # Sidebar panel for inputs ----
+    sidebarPanel(
+
+      selectInput("forest", h3("Choose your Forest"),
+                  choices = c("All Forests","South Hammond", "Donnerville", "Beaver Creek", "Whippoorwill Corners", "Whiskey Flats", "Degrasse"), selected = "All Forests"),
+        
+     conditionalPanel( condition = "NOTHINGHERE",
+                    checkboxInput("remove", "Remove Nothing Here")),
+     h6("Powered by:"),
+      img(src = "/nun_SLU.jpg", height = 60, width = 200),
+
+  ),
+  
+    
+
+    # Main panel for displaying outputs ----
+    mainPanel(  tabsetPanel(
+      tabPanel("Map of Study Sites", leafletOutput(outputId = "speciesmap")),
+        tabPanel("Species per Forest",
+                 plotOutput(outputId = "foresthist")),
+        tabPanel("Species Trophic Levels", plotOutput(outputId = "trophic")),
+        tabPanel("Forest Composition", plotOutput(outputId = "covariates")),
+        tabPanel("Forest Diversity", plotOutput(outputId = "diversity"))
+      )
+  )
+)
+)
+
+
+server <- function(input, output) {
+
+  # Histogram of the number of species per forest ----
+
+ output$speciesmap <- renderLeaflet({ 
+ 
+     
+  leaflet() %>% addTiles() %>% 
+  setView(lng = -75.169395, lat = 44.595466, zoom = 9) %>%  
+  addPolygons(
+     data = Forests_proj, 
+    weight = 2, 
+    col = '#39541e',
+    highlight = highlightOptions(#highlight lets you mouse over a county and have it change color
+      weight = 5,
+      color = "#C6ABE1", 
+      bringToFront = T),
+    label = labels,
+    labelOptions = labelOptions(
+      style = list("font-weight" = "normal", padding = "3px 8px"),
+      textsize = "15px",
+      direction = "auto")
+    ) 
+ 
+})
+  output$foresthist <- renderPlot({
+
+   
+   if(input$remove){
+  newdata<-switch(input$forest, 
+                  "All Forests" = newData,
+                      "South Hammond" = newData %>% filter(ForestName=="SH"),
+                      "Beaver Creek" = newData %>% filter(ForestName=="BC"),
+                  "Donnerville" = newData %>% filter(ForestName == "DON"),
+                  "Whippoorwill Corners" = newData %>% filter(ForestName == "WHIP"),
+                  "Whiskey Flats" = newData %>% filter(ForestName == "WF"),
+                  "Degrasse" = newData %>% filter(ForestName == "DEG"))
+  
+    ggplot(newdata, aes(choice)) + 
+     geom_histogram(stat = "count", position = "dodge", fill = '#165970', colour = '#543b1f') + 
+     theme_bw() + 
+      labs(title = "Species per Forest", x="Species", y="Number of Detections") +
+     theme(axis.text.x = element_text(angle = 90, size = 10, vjust = 0.5))
+}    
+    else {
+data<- switch(input$forest, 
+              "All Forests" = dataFinal,
+                      "South Hammond" = dataFinal %>% filter(ForestName=="SH"),
+                      "Beaver Creek" = dataFinal %>% filter(ForestName=="BC"),
+                  "Donnerville" = dataFinal %>% filter(ForestName == "DON"),
+                  "Whippoorwill Corners" = dataFinal %>% filter(ForestName == "WHIP"),
+                  "Whiskey Flats" = dataFinal %>% filter(ForestName == "WF"),
+                  "Degrasse" = dataFinal %>% filter(ForestName == "DEG"))
+          
+      ggplot(data, aes(choice)) + 
+     geom_histogram(stat = "count", position = "dodge", fill = '#165970', colour = '#543b1f') + 
+     theme_bw() + 
+        labs(title = "Species per Forest", x="Species", y="Number of Detections")+
+     theme(axis.text.x = element_text(angle = 90, size = 10, vjust = 0.5))
+    }
+      })
+  output$trophic <- renderPlot({
+
+  data<-switch(input$forest, 
+               "All Forests" = mammals,
+                      "Whiskey Flats" = mammals %>% filter(ForestName=="WF"),
+                      "South Hammond" = mammals %>% filter(ForestName=="SH"),
+                  "Donnerville" = mammals %>% filter(ForestName == "DON"),
+                  "Beaver Creek" = mammals %>% filter(ForestName == "BC"),
+                  "Degrasse" = mammals %>% filter(ForestName == "DEG"),
+                  "Whippoorwill Corners" = mammals %>% filter(ForestName == "WHIP"),)
+  
+    ggplot(data, aes(Trophic)) + 
+     geom_histogram(stat = "count", position = "dodge", fill = '#165970', colour = '#543b1f') + 
+     theme_bw() + 
+      labs(title = "Trophic Levels per Forest", x="Trophic Level", y="Number of Detections") +
+     theme(axis.text.x = element_text(angle = 90, size = 10, vjust = 0.5))
+    
+ 
+      })
+  output$covariates <- renderPlot({
+
+  data<-switch(input$forest, 
+               "All Forests" = all_forests,
+                      "South Hammond" = dat_molten %>% filter(Forest=="SH"),
+                      "Beaver Creek" = dat_molten %>% filter(Forest=="BC"),
+                  "Donnerville" = dat_molten %>% filter(Forest=="DON"),
+                  "Degrasse" = dat_molten %>% filter(Forest=="DEG"),
+                  "Whippoorwill Corners" = dat_molten %>% filter(Forest=="WHIP"),
+                  "Whiskey Flats" = dat_molten %>% filter(Forest=="WF"),)
+  
+  
+   ggplot(data, aes(x="", y=value, fill= variable)) + 
+         geom_bar(stat="identity") + 
+  coord_polar("y", start = 0) + 
+     geom_text(aes(label = paste0(round(value), "%")), position = position_stack(vjust = 0.5))+
+      theme_void() +
+      theme(axis.line = element_blank(),
+          plot.title = element_text(hjust=0.5)) + 
+    labs(x = NULL,
+         y = NULL,
+         title = "Forest Composition")+
+     scale_fill_manual(values = c("Water" = "#165970",
+                                  "Mixed" = "#543b1f",
+                                  "Evergreen" = "#C6ABE1",
+                                  "Deciduous" = "#39541e",
+                                  "Development" = "#ABC4E0",
+                                  "Agriculture" = "#E9A68F",
+                                   "Barren" = "#b9da97",
+                                   "Shrub" = "#d4b18a",
+                                  "Wetland" = "#69c3e1",
+                                  "Herbaceous" = "Gray"))
+    
+ 
+      })
+    output$diversity <- renderPlot({
+
+  data<-switch(input$forest, 
+                "All Forests" = divFinal,
+                      "South Hammond" = divFinal %>% filter(Forest == "SH"),
+                      "Beaver Creek" = divFinal %>% filter(Forest == "BC"),
+                  "Donnerville" = divFinal %>% filter(Forest == "DON"),
+                  "Degrasse" = divFinal %>% filter(Forest == "DEG"),
+                  "Whippoorwill Corners" = divFinal %>% filter(Forest == "WHIP"),
+                  "Whiskey Flats" = divFinal %>% filter(Forest == "WF"),)
+  
+ ggplot(data, aes(x= Forest, y = Index, fill = Diversity_Indices)) + 
+     geom_bar(stat = "identity",position= position_dodge(), width = 0.7) +
+     labs(title = "Diversity per Forest", x= "Forest", y= "Diversity Index") + theme (plot.title =element_text(hjust = 0.5)) + 
+   scale_fill_manual(values = c("div_shan" = "#165970",
+                                  "inv_simp" = "#543b1f",
+                                  "SR" = "#C6ABE1"))
+ 
+      })
+
+
+ 
+
+    }
+
+
+
+shinyApp(ui = ui, server = server)
+```
+
+```{r}
+ui <- fluidPage(
+
+  # App title ----
+  titlePanel("North Country Wild Zooniverse Project"),
+
+  # Sidebar layout with input and output definitions ----
+  sidebarLayout(
+
+    # Sidebar panel for inputs ----
+    sidebarPanel(
+
+      # Input: Slider for the number of bins ----
+      selectInput("forest", h3("Choose your Forest"),
+                  choices = c("South Hammond", "Donnerville", "Beaver Creek", "Whippoorwill Corners", "Whiskey Flats", "Degrasse"), selected = "All Forests"),
+      
+     
+  
+    checkboxGroupInput("species", 
+                              h3("Select your Species"), 
+                              choices = list("White-tailed Deer" = 1, 
+                                             "Chipmunk" = 2, 
+                                             "Coyote" = 3,
+                                             "Fisher" = 4,
+                                             "Raccoon" = 5,
+                                             "Red Squirrel" = 6,
+                                             "Other Small Mammal" = 7,
+                                             "Gray Squirrel" = 8,
+                                             "Black Bear" = 9,
+                                             "Red Fox" = 10,
+                                             "Porcupine" = 11,
+                                             "Bobcat" = 12,
+                                             "Opossum" = 13,
+                                             "Weasel" = 14,
+                                             "Striped Skunk" =15,
+                                             "Flying Squirrel" = 16,
+                                             "Snowshoe Hare" = 17,
+                                             "River Otter" = 18,
+                                             "Mink" = 19),
+                              selected = 1),
+    ),
+  
+
+    # Main panel for displaying outputs ----
+    mainPanel(
+        plotOutput(outputId = "foresthist"),
+      img(src = "NatureUpNorth.png", height = 100, width = 300),
+)
+)
+)
+
+server <- function(input, output) {
+
+
+  output$foresthist <- renderPlot({
+    
+     study <- switch(input$forest,
+                   "South Hammond" = newData %>% filter(ForestName=="SH"),
+                      "Beaver Creek" = newData %>% filter(ForestName=="BC"),
+                  "Donnerville" = newData %>% filter(ForestName == "DON"),
+                  "Whippoorwill Corners" = newData %>% filter(ForestName == "WHIP"),
+                  "Whiskey Flats" = newData %>% filter(ForestName == "WF"),
+                  "Degrasse" = newData %>% filter(ForestName == "DEG"),
+    
+    data<- switch(input$species,
+            "White-tailed Deer" = study %>% filter(choice=="DEERWHITETAILED"),
+                      "Chipmunk" = study %>% filter(choice=="CHIPMUNK"),
+                  "Coyote" = study %>% filter(choice == "COYOTE"),
+                  "Fisher" = study %>% filter(choice == "FISHER"),
+                  "Raccoon" = study %>% filter(choice == "RACCOON"),
+                  "Red Squirrel" = study %>% filter(choice == "SQUIRRELRED"),
+               "Gray Squirrel" = study %>% filter(choice == "SQUIRRELGRAY"),
+               "Black Bear" = study %>% filter(choice == "BLACKBEAR"),
+               "Red Fox" = study %>% filter(choice == "FOXRED"),
+               "Porcupine" = study %>% filter(choice == "PORCUPINE"),
+               "Bobcat" = study %>% filter(choice == "BOBCAT"),
+               "Weasel" = study %>% filter(choice == "WEASEL"),
+               "Striped Skunk" = study %>% filter(choice == "SKUNKSTRIPED"),
+               "Flying Squirrel" = study %>% filter(choice == "SQUIRRELFLYING"),
+               "Snowshoe Hare" = study %>% filter(choice == "SNOWSHOEHARE"),
+               "River Otter" = study %>% filter(choice == "RIVEROTTER"),
+               "Mink" = study %>% filter(choice == "MINK"),
+               "Other Small Mammal" = study %>% filter(choice == "OTHERSMALLMAMMAL"),
+               "Opossum" = study %>% filter(choice == "OPOSSUM"),
+
+          
+      ggplot(data, aes(x = "")) +
+     geom_histogram(stat = "count", position = "dodge") +
+     theme_bw() +
+    xlab("Species") +
+     ylab("Number of Detections") +
+     theme(axis.text.x = element_text(angle = 90, size = 10, vjust = 0.5))
+    )
+    )}
+    )
+
+  }
+shinyApp(ui = ui, server = server)
+```
+
