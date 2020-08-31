@@ -20,7 +20,11 @@ library(htmltools)
 
 Now let's load the data frame we need. This will tell us the total number of species per forest and how many of each species were detected
 ```{r}
+<<<<<<< HEAD
 dataFinal <- read_csv("~/Dropbox/R/KateSyncedShiny/Combined/Data/CSVs/dataFinal.csv")
+=======
+dataFinal <- read_csv("~/Documents/Kate_ThesisCode/dataFinal.csv")
+>>>>>>> upstream/master
 ```
 
 Subset data to remove "Nothing Here" choice
@@ -32,7 +36,11 @@ newData<-dataFinal[-dump,]
 
 Data for trophic tab
 ```{r}
+<<<<<<< HEAD
 mammals<- read_csv("~/Dropbox/R/KateSyncedShiny/Combined/Data/CSVs/mammals.csv")
+=======
+mammals<- read_csv("mammals.csv")
+>>>>>>> upstream/master
 mammals<- mammals[,2:16]
 ```
 
@@ -40,7 +48,11 @@ mammals<- mammals[,2:16]
 
 Data for covariates tab
 ```{r}
+<<<<<<< HEAD
 Covariates <- read_csv("~/Dropbox/R/KateSyncedShiny/Combined/Data/CSVs/Covariates.csv")
+=======
+Covariates <- read_csv("Covariates.csv")
+>>>>>>> upstream/master
 
 Cov_sum<-Covariates %>% group_by(Forest) %>% summarise(
   Water = mean(P_Water50), Mixed = mean(P_Mixed50), Evergreen = mean(P_Evergreen50), Deciduous = mean(P_Deciduous50), Development = mean(P_Development50), Agriculture = mean(P_Agriculture50), Barren = mean(P_Barren50), Shrub = mean(P_Shrub50), Wetland = mean(P_Wetland50), Herbaceous = mean(P_Herb50)
