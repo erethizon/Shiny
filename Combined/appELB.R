@@ -12,8 +12,9 @@ library(htmltools)
 library(rgdal)
 library(leaflet)
 library(plotrix)
+###########################
 library(treemapify)
-
+###########################
 # #Load the csv files
 # all_forests <- read_csv("Data/CSVs/all_forests.csv")
 # dat_molten<- read_csv("Data/CSVs/dat_molten.csv")
@@ -50,10 +51,11 @@ Forests_proj@data$Forest <- with(Forests@data, ifelse(
           ForestCode == "WF", 'Whiskey Flats', ifelse(
             ForestCode == "DEG", 'Degrasse', 'whoops')))))))
 
+##################################################
 #add columns to all_forests and data_molten for labeling treemap
 dat_molten$label<-paste(dat_molten$variable, round(dat_molten$value, 1), sep = "\n")
 all_forests$label<-paste(all_forests$variable, round(all_forests$value, 1), sep = "\n")
-
+#####################################################
 ui <- fluidPage(
   
   # App title ----
@@ -409,6 +411,8 @@ server <- function(input, output){
                  "Degrasse" = dat_molten %>% filter(Forest=="DEG"),
                  "Whippoorwill Corners" = dat_molten %>% filter(Forest=="WHIP"),
                  "Whiskey Flats" = dat_molten %>% filter(Forest=="WF"),)
+    
+ #####################################################   
     #treemap
     
     ggplot(data,(aes(area = value, label = label, fill = as.factor(variable))))+
@@ -432,6 +436,8 @@ server <- function(input, output){
       )+
       labs(title="Forest Composition",
            fill = "Land Use Category")
+ ##############################################################   
+    
     #pie chart
     # ggplot(data, aes(x="", y=value, fill= variable)) + 
     #   geom_bar(stat="identity") + 
